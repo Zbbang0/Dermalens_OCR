@@ -1,0 +1,27 @@
+# ── 가상환경 ────────────────────────────────────
+derma/
+venv/
+.venv/
+env/
+
+# ── 비밀/환경설정 ───────────────────────────────
+.env
+credentials/
+*-key.json
+*.key.json
+service-account*.json
+
+# ── 파이썬 캐시 ─────────────────────────────────
+__pycache__/
+*.py[cod]
+*.egg-info/
+.pytest_cache/
+
+# ── 분석 산출물 ─────────────────────────────────
+outputs/
+
+# ── OS / IDE ────────────────────────────────────
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
