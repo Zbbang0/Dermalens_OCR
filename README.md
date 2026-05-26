@@ -65,6 +65,21 @@ curl -X POST http://localhost:8080/ocr \
   -F "files=@images/sample1.jpg"
 ```
 
+## 배포 (Railway 등)
+
+- [Procfile](Procfile) — `web: uvicorn src.server:app --host 0.0.0.0 --port $PORT`
+- [.python-version](.python-version) — `3.10` (numpy 1.23.5 / opencv 4.6 호환 버전 고정)
+- `requirements.txt` 는 `opencv-python-headless` 사용 (서버에 GUI 라이브러리 불필요)
+
+### 환경변수 (배포 대시보드에 등록)
+
+로컬과 동일한 키들(`OPENAI_API_KEY`, `PUBLIC_DATA_API_KEY`, `BACKEND_OCR_RESULT_URL` 등)을 등록하되,
+**Google Vision 키만 처리 방식이 다르다.**
+
+- 로컬: `GOOGLE_APPLICATION_CREDENTIALS` = 키 파일 경로
+- 배포: 파일 업로드가 어려우므로 `GOOGLE_CREDENTIALS_JSON` 에 **키 JSON 내용 전체**(원문 또는 base64)를 넣는다.
+  서버가 시작 시 임시 파일로 복원해 자동 연결한다 (`src/server.py` 의 `_bootstrap_google_credentials`).
+
 ## 프로젝트 구조
 
 ```

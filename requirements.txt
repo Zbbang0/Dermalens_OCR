@@ -7,7 +7,9 @@ google-cloud-vision==3.7.2
 google-auth==2.52.0
 
 # ── 이미지 처리 ─────────────────────────────────────────────
-opencv-python==4.6.0.66
+# headless: 서버/배포 환경에 GUI(libGL) 의존성 없이 동작 (cv2 API 동일).
+# 코드에 imshow 등 GUI 사용처 없음 → 로컬도 동일하게 동작.
+opencv-python-headless==4.6.0.66
 numpy==1.23.5
 pillow==12.2.0
 
