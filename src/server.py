@@ -171,8 +171,12 @@ def ocr(req: OCRRequest):
             traceback.print_exc()
             raise HTTPException(status_code=500, detail=f"OCR 분석 실패: {error}")
 
-        # 3. 백엔드 스펙 payload 생성
-        payload = build_backend_payload(final_result, user_id=req.user_id)
+        # 3. 백엔드 스펙 payload 생성 (분석한 이미지 URL 도 함께 전달)
+        payload = build_backend_payload(
+            final_result,
+            user_id=req.user_id,
+            image_url=urls[0],
+        )
 
         # 4. 백엔드로 전송
         backend_url = os.getenv("BACKEND_OCR_RESULT_URL")
