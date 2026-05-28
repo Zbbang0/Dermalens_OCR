@@ -8,6 +8,11 @@
   - raw_text       : OCR 원문                          ← result.ocr_meta.raw_text
   - image_url      : 분석한 이미지 URL (선택)          ← 요청으로 받은 값 그대로
   - ocr_confidence : OCR 평균 신뢰도 (0.0~1.0)         ← final_result.accuracy.ocr_confidence
+  - product_name   : 제품명                            ← result.product_name
+  - capacity       : 용량                              ← result.capacity
+  - usage          : 사용방법 (문자열 리스트)          ← result.usage
+  - cautions       : 주의사항 (문자열 리스트)          ← result.cautions
+  - effects        : 효능/장점 (문자열 리스트)         ← result.effects
 
 주의
 ----
@@ -40,6 +45,11 @@ def build_backend_payload(final_result, user_id, image_url=None):
           "ingredients": [...],       # after_api(검증된 성분) 배열
           "raw_text": "...",
           "ocr_confidence": 0.0~1.0,
+          "product_name": "...",
+          "capacity": "...",
+          "usage": [...],
+          "cautions": [...],
+          "effects": [...],
           "image_url": "..."          # image_url 인자가 있을 때만
         }
     """
@@ -65,11 +75,25 @@ def build_backend_payload(final_result, user_id, image_url=None):
     except (TypeError, ValueError):
         ocr_confidence = 0.0
 
+    # 제품 메타: 누락 시 upstream 이 "확인 불가" 로 채워두므로 값 그대로 전달
+    product_name = result.get("product_name") or ""
+    capacity = result.get("capacity") or ""
+
+    # 텍스트 리스트(사용방법/주의사항/효능): 항상 list 로 정규화
+    usage = normalize_list(result.get("usage", []))
+    cautions = normalize_list(result.get("cautions", []))
+    effects = normalize_list(result.get("effects", []))
+
     payload = {
         "user_id": user_id,
         "ingredients": ingredients_after_api,
         "raw_text": raw_text,
         "ocr_confidence": round(ocr_confidence, 4),
+        "product_name": product_name,
+        "capacity": capacity,
+        "usage": usage,
+        "cautions": cautions,
+        "effects": effects,
     }
 
     # image_url 은 선택값 — 전달받은 경우에만 포함
