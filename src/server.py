@@ -39,6 +39,7 @@ import os
 import shutil
 import sys
 import tempfile
+import time
 import traceback
 from typing import List, Union
 
@@ -146,43 +147,66 @@ def ocr(req: OCRRequest):
     urls = req.image_url if isinstance(req.image_url, list) else [req.image_url]
     urls = [str(u).strip() for u in urls if u and str(u).strip()]
 
+    print("=" * 70)
+    print(f"[OCR REQUEST] user_id={req.user_id} / 이미지 {len(urls)}장")
+    print("=" * 70)
+
     if not urls:
         raise HTTPException(status_code=400, detail="image_url 이 필요합니다.")
 
     temp_dir = tempfile.mkdtemp(prefix="dermalens_ocr_")
+    request_start = time.time()
 
     try:
         # 1. URL 이미지 다운로드
+        print(f"[1/5] 이미지 다운로드 시작 ({len(urls)}장)")
+        stage_start = time.time()
         try:
             saved_paths = _download_images(urls, temp_dir)
         except requests.exceptions.RequestException as error:
+            print(f"[1/5] FAIL 이미지 다운로드 실패: {error}")
             raise HTTPException(
                 status_code=400,
                 detail=f"이미지 다운로드 실패: {error}",
             )
+        print(f"[1/5] OK 이미지 다운로드 완료 ({time.time() - stage_start:.1f}s)")
 
         if not saved_paths:
             raise HTTPException(status_code=400, detail="다운로드된 이미지가 없습니다.")
 
         # 2. OCR 파이프라인 실행
+        print(f"[2/5] OCR 파이프라인 분석 시작")
+        stage_start = time.time()
         try:
             final_result = get_pipeline().analyze(saved_paths)
         except Exception as error:
             traceback.print_exc()
+            print(f"[2/5] FAIL 파이프라인 분석 실패: {error}")
             raise HTTPException(status_code=500, detail=f"OCR 분석 실패: {error}")
+        print(f"[2/5] OK 파이프라인 분석 완료 ({time.time() - stage_start:.1f}s)")
 
         # 3. 백엔드 스펙 payload 생성 (분석한 이미지 URL 도 함께 전달)
+        print(f"[3/5] 백엔드 payload 생성")
+        stage_start = time.time()
         payload = build_backend_payload(
             final_result,
             user_id=req.user_id,
             image_url=urls[0],
         )
+        print(f"[3/5] OK payload 생성 완료 ({time.time() - stage_start:.1f}s)")
 
         # 4. 백엔드로 전송
         backend_url = os.getenv("BACKEND_OCR_RESULT_URL")
+        print(f"[4/5] 백엔드 push 시작: {backend_url or '(BACKEND_OCR_RESULT_URL 미설정)'}")
+        stage_start = time.time()
         backend_response = _send_to_backend(backend_url, payload)
+        backend_status = backend_response.get("status_code") or backend_response.get("skipped") or backend_response.get("error")
+        print(f"[4/5] OK 백엔드 push 완료 ({time.time() - stage_start:.1f}s) → {backend_status}")
 
         # 5. 결과 반환
+        total = time.time() - request_start
+        print(f"[5/5] OK 응답 반환 (전체 {total:.1f}s)")
+        print("=" * 70)
         return JSONResponse(
             content={
                 "success": True,
